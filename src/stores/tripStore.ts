@@ -5,6 +5,7 @@ interface Trip {
   title: string;
   startDate: string;
   endDate: string;
+  comment: string;
 }
 
 interface TripState {
