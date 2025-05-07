@@ -6,12 +6,18 @@ interface Trip {
   startDate: string;
   endDate: string;
   comment: string;
+  location?: string;
+  plan?: string;
+  pins?: { lat: number; lng: number }[];
+  center?: { lat: number; lng: number };
 }
 
 interface TripState {
   trips: Trip[];
   addTrip: (trip: Trip) => void;
   removeTrip: (id: string) => void;
+  updateTrip: (updatedTrip: Trip) => void;
+  getTripById: (id: string) => Trip | undefined;
 }
 
 const LOCAL_KEY = "tinytrip-trips";
@@ -26,15 +32,29 @@ export const useTripStore = create<TripState>((set, get) => {
 
   return {
     trips: initialTrips,
+
     addTrip: (trip) => {
       const updated = [...get().trips, trip];
       set({ trips: updated });
       syncToLocalStorage(updated);
     },
+
     removeTrip: (id) => {
       const updated = get().trips.filter((trip) => trip.id !== id);
       set({ trips: updated });
       syncToLocalStorage(updated);
+    },
+
+    updateTrip: (updatedTrip) => {
+      const updated = get().trips.map((trip) =>
+        trip.id === updatedTrip.id ? updatedTrip : trip
+      );
+      set({ trips: updated });
+      syncToLocalStorage(updated);
+    },
+
+    getTripById: (id) => {
+      return get().trips.find((trip) => trip.id === id);
     },
   };
 });
