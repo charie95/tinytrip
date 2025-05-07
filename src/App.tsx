@@ -1,7 +1,8 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import Home from './pages/Home';
-import TripList from './pages/TripList';
-import TripDetail from './pages/TripDetail';
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import "leaflet/dist/leaflet.css";
+import Home from "./pages/Home";
+import TripList from "./pages/TripList";
+import TripDetail from "./pages/TripDetail";
 
 function App() {
   return (
