@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState } from "react";
 
 interface AddTripFormProps {
   onSubmit: (trip: {
@@ -6,20 +6,22 @@ interface AddTripFormProps {
     startDate: string;
     endDate: string;
     comment: string;
+    location: string;
   }) => void;
   onCancel: () => void;
 }
 
 function AddTripForm({ onSubmit, onCancel }: AddTripFormProps) {
-  const [title, setTitle] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [comment, setComment] = useState('');
+  const [title, setTitle] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [comment, setComment] = useState("");
+  const [location, setLocation] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title || !startDate || !endDate) return;
-    onSubmit({ title, startDate, endDate, comment });
+    onSubmit({ title, startDate, endDate, comment, location });
   };
 
   return (
@@ -42,6 +44,13 @@ function AddTripForm({ onSubmit, onCancel }: AddTripFormProps) {
         className="border px-3 py-2 rounded"
         value={endDate}
         onChange={(e) => setEndDate(e.target.value)}
+      />
+      <input
+        type="text"
+        placeholder="도시명 (예: 방콕, 서울, 뉴욕)"
+        className="border px-3 py-2 rounded"
+        value={location}
+        onChange={(e) => setLocation(e.target.value)}
       />
       <textarea
         placeholder="여행 내용, 메모 등"
