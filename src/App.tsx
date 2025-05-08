@@ -8,7 +8,7 @@ const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string;
 
 function App() {
   return (
-    <LoadScript googleMapsApiKey={GOOGLE_MAPS_API_KEY}>
+    <LoadScript googleMapsApiKey={GOOGLE_MAPS_API_KEY} libraries={["places"]}>
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Home />} />
