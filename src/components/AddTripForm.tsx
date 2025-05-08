@@ -1,4 +1,5 @@
 import { useState } from "react";
+import LocationAutocomplete from "./LocationAutocomplete";
 
 interface AddTripFormProps {
   onSubmit: (trip: {
@@ -7,8 +8,9 @@ interface AddTripFormProps {
     endDate: string;
     comment: string;
     location: string;
+    center?: { lat: number; lng: number };
   }) => void;
-  onCancel: () => void;
+  onCancel?: () => void;
 }
 
 function AddTripForm({ onSubmit, onCancel }: AddTripFormProps) {
@@ -17,11 +19,32 @@ function AddTripForm({ onSubmit, onCancel }: AddTripFormProps) {
   const [endDate, setEndDate] = useState("");
   const [comment, setComment] = useState("");
   const [location, setLocation] = useState("");
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(
+    null
+  );
+  const [isPlaceSelected, setIsPlaceSelected] = useState(false);
+
+  const [center, setCenter] = useState<{ lat: number; lng: number } | null>(
+    null
+  );
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title || !startDate || !endDate) return;
-    onSubmit({ title, startDate, endDate, comment, location });
+
+    if (!isPlaceSelected) {
+      alert("여행지는 자동완성 목록에서 선택해주세요!");
+      return;
+    }
+
+    onSubmit({
+      title,
+      startDate,
+      endDate,
+      comment,
+      location,
+      center: center || undefined,
+    });
   };
 
   return (
@@ -45,12 +68,12 @@ function AddTripForm({ onSubmit, onCancel }: AddTripFormProps) {
         value={endDate}
         onChange={(e) => setEndDate(e.target.value)}
       />
-      <input
-        type="text"
-        placeholder="도시명 (예: 방콕, 서울, 뉴욕)"
-        className="border px-3 py-2 rounded"
-        value={location}
-        onChange={(e) => setLocation(e.target.value)}
+      <LocationAutocomplete
+        onSelect={({ name, lat, lng }) => {
+          setLocation(name);
+          setCenter({ lat, lng });
+          setIsPlaceSelected(true);
+        }}
       />
       <textarea
         placeholder="여행 내용, 메모 등"
