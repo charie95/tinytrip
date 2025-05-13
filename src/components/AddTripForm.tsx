@@ -19,9 +19,6 @@ function AddTripForm({ onSubmit, onCancel }: AddTripFormProps) {
   const [endDate, setEndDate] = useState("");
   const [comment, setComment] = useState("");
   const [location, setLocation] = useState("");
-  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(
-    null
-  );
   const [isPlaceSelected, setIsPlaceSelected] = useState(false);
 
   const [center, setCenter] = useState<{ lat: number; lng: number } | null>(
