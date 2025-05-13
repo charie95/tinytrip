@@ -1,24 +1,6 @@
 import { create } from "zustand";
-
-interface Trip {
-  id: string;
-  title: string;
-  startDate: string;
-  endDate: string;
-  comment: string;
-  location?: string;
-  plan?: string;
-  pins?: { lat: number; lng: number }[];
-  center?: { lat: number; lng: number };
-}
-
-interface TripState {
-  trips: Trip[];
-  addTrip: (trip: Trip) => void;
-  removeTrip: (id: string) => void;
-  updateTrip: (updatedTrip: Trip) => void;
-  getTripById: (id: string) => Trip | undefined;
-}
+import { Trip } from "../types/trip";
+import { TripState } from "../types/store";
 
 const LOCAL_KEY = "tinytrip-trips";
 
