@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import LocationAutocomplete from "./LocationAutocomplete";
 
 interface AddTripFormProps {
@@ -19,17 +19,25 @@ function AddTripForm({ onSubmit, onCancel }: AddTripFormProps) {
   const [endDate, setEndDate] = useState("");
   const [comment, setComment] = useState("");
   const [location, setLocation] = useState("");
-  const [isPlaceSelected, setIsPlaceSelected] = useState(false);
+  const centerRef = useRef<{ lat: number; lng: number } | null>(null);
 
-  const [center, setCenter] = useState<{ lat: number; lng: number } | null>(
-    null
-  );
-
+  const onSelect = ({
+    lat,
+    lng,
+    name,
+  }: {
+    lat: number;
+    lng: number;
+    name: string;
+  }) => {
+    centerRef.current = { lat, lng };
+    setLocation(name);
+  };
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title || !startDate || !endDate) return;
 
-    if (!isPlaceSelected) {
+    if (!centerRef.current) {
       alert("여행지는 자동완성 목록에서 선택해주세요!");
       return;
     }
@@ -40,7 +48,7 @@ function AddTripForm({ onSubmit, onCancel }: AddTripFormProps) {
       endDate,
       comment,
       location,
-      center: center || undefined,
+      center: centerRef.current,
     });
   };
 
@@ -65,13 +73,7 @@ function AddTripForm({ onSubmit, onCancel }: AddTripFormProps) {
         value={endDate}
         onChange={(e) => setEndDate(e.target.value)}
       />
-      <LocationAutocomplete
-        onSelect={({ name, lat, lng }) => {
-          setLocation(name);
-          setCenter({ lat, lng });
-          setIsPlaceSelected(true);
-        }}
-      />
+      <LocationAutocomplete onSelect={onSelect} />
       <textarea
         placeholder="여행 내용, 메모 등"
         className="border px-3 py-2 rounded resize-none h-24"
