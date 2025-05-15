@@ -26,7 +26,7 @@ function TripList() {
     const newTrip = {
       id: Date.now().toString(),
       ...trip,
-      center: coords || undefined, // 지오코딩 실패하면 center 없이 저장
+      center: coords || undefined,
     };
 
     addTrip(newTrip);
