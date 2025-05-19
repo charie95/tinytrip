@@ -1,37 +1,66 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useTripStore } from "../stores/tripStore";
-import { GoogleMap, Marker, Polyline } from "@react-google-maps/api";
+import { GoogleMap, Marker } from "@react-google-maps/api";
 import { getDateRange } from "../utils/Date";
+
+const markerColors = [
+  "red", "blue", "green", "orange", "purple",
+  "yellow", "pink", "cyan", "brown", "gray",
+];
 
 const TripDetail = () => {
   const { id } = useParams<{ id: string }>();
-  const trip = useTripStore((state) => state.getTripById(id || ""));
+  const trip = useTripStore((state) =>
+    state.trips.find((t) => t.id === id)
+  );
+  const updateTrip = useTripStore((state) => state.updateTrip);
+
+  const [selectedDate, setSelectedDate] = useState<string>("");
+  const [isEditMode, setIsEditMode] = useState<boolean>(false);
+
+  const mapRef = useRef<google.maps.Map | null>(null);
+  const polylineRef = useRef<Record<string, google.maps.Polyline>>({});
+
+  useEffect(() => {
+  if (trip?.startDate && trip?.endDate && !selectedDate) {
+    const range = getDateRange(trip.startDate, trip.endDate);
+    setSelectedDate(range[0]); 
+  }
+}, [trip, selectedDate]);
 
   if (!trip) {
     return <div className="p-4">😢 해당 여행 일정을 찾을 수 없습니다.</div>;
   }
 
   const dateRange = getDateRange(trip.startDate, trip.endDate);
-  const [selectedDate, setSelectedDate] = useState<string>(dateRange[0]);
-  const [isEditMode, setIsEditMode] = useState<boolean>(false);
-  const markerColors = [
-    "red",
-    "blue",
-    "green",
-    "orange",
-    "purple",
-    "yellow",
-    "pink",
-    "cyan",
-    "brown",
-    "gray",
-  ];
-  console.log(trip.center);
 
-  return (
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !trip.pins) return;
+
+    // Delete existing polylines
+    Object.values(polylineRef.current).forEach((poly) => poly.setMap(null));
+    polylineRef.current = {};
+
+    // Create new polylines
+    Object.entries(trip.pins).forEach(([date, pins]) => {
+      if (pins.length < 2) return;
+      const dayIndex = dateRange.findIndex((d) => d === date);
+      const polyline = new google.maps.Polyline({
+        path: pins,
+        map,
+        strokeColor: markerColors[dayIndex % markerColors.length],
+        strokeOpacity: 0.5,
+        strokeWeight: 2,
+      });
+      polylineRef.current[date] = polyline;
+    });
+  }, [trip.pins, dateRange]);
+
+return (
     <div className="flex h-screen overflow-hidden">
-      {/* 왼쪽 - 일정 / 장소 리스트 */}
+      {/* Left Panel */}
       <div className="w-full max-w-md p-6 overflow-y-auto bg-white shadow-lg">
         <Link
           to="/trips"
@@ -75,10 +104,7 @@ const TripDetail = () => {
                     ...trip.plan,
                     [date]: e.target.value,
                   };
-                  useTripStore.getState().updateTrip({
-                    ...trip,
-                    plan: updatedPlan,
-                  });
+                  updateTrip({ ...trip, plan: updatedPlan });
                 }}
               />
             </div>
@@ -86,18 +112,21 @@ const TripDetail = () => {
         </div>
       </div>
 
-      {/* 오른쪽 - 지도 */}
+      {/* Map Panel */}
       <div className="flex-1 relative">
         {trip.center?.lat && trip.center?.lng ? (
           <GoogleMap
             mapContainerStyle={{ width: "100%", height: "100%" }}
-            center={{ lat: trip.center!.lat, lng: trip.center!.lng }}
+            center={{ lat: trip.center.lat, lng: trip.center.lng }}
             zoom={13}
+            onLoad={(map) => {
+              mapRef.current = map;
+            }}
             onClick={(e) => {
-              if (!isEditMode) return;
+              if (!isEditMode || !selectedDate) return;
               const lat = e.latLng?.lat();
               const lng = e.latLng?.lng();
-              if (!lat || !lng || !selectedDate) return;
+              if (!lat || !lng) return;
 
               const newPin = { lat, lng };
               const updatedPins = {
@@ -105,18 +134,14 @@ const TripDetail = () => {
                 [selectedDate]: [...(trip.pins?.[selectedDate] || []), newPin],
               };
 
-              useTripStore.getState().updateTrip({
-                ...trip,
-                pins: updatedPins,
-              });
+              updateTrip({ ...trip, pins: updatedPins });
             }}
           >
             {Object.entries(trip.pins || {}).map(([date, pins]) => {
               const dayIndex = dateRange.findIndex((d) => d === date);
-              if (dayIndex === -1) return null;
               return pins.map((pin, idx) => (
                 <Marker
-                  key={`${date}-${idx}`}
+                  key={`marker-${date}-${idx}`}
                   position={pin}
                   label={{
                     text: `D${dayIndex + 1}`,
@@ -128,24 +153,18 @@ const TripDetail = () => {
                       markerColors[dayIndex % markerColors.length]
                     }-dot.png`,
                   }}
-                />
-              ));
-            })}
+                  onClick={() => {
+                    if (!confirm("이 마커를 삭제할까요?")) return;
 
-            {Object.entries(trip.pins || {}).map(([date, pins]) => {
-              const dayIndex = dateRange.findIndex((d) => d === date);
-              if (dayIndex === -1) return null;
-              return pins.length > 1 ? (
-                <Polyline
-                  key={`poly-${date}`}
-                  path={pins}
-                  options={{
-                    strokeColor: markerColors[dayIndex % markerColors.length],
-                    strokeOpacity: 0.8,
-                    strokeWeight: 2,
+                    const updatedPins = {
+                      ...trip.pins,
+                      [date]: (trip.pins?.[date] || []).filter((_, i) => i !== idx),
+                    };
+
+                    updateTrip({ ...trip, pins: updatedPins });
                   }}
                 />
-              ) : null;
+              ));
             })}
           </GoogleMap>
         ) : (
