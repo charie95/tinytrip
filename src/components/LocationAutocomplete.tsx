@@ -3,9 +3,10 @@ import { Autocomplete } from "@react-google-maps/api";
 
 interface Props {
   onSelect: (location: { name: string; lat: number; lng: number }) => void;
+  initialValue?: string;
 }
 
-function LocationAutocomplete({ onSelect }: Props) {
+function LocationAutocomplete({ onSelect, initialValue }: Props) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
 
@@ -34,6 +35,7 @@ function LocationAutocomplete({ onSelect }: Props) {
       <input
         ref={inputRef}
         type="text"
+        defaultValue={initialValue}
         placeholder="도시명을 입력하세요"
         className="border px-3 py-2 rounded w-full"
       />

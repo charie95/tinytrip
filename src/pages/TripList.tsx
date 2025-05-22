@@ -19,14 +19,23 @@ function TripList() {
     startDate: string;
     endDate: string;
     comment: string;
-    location: string;
+    location?: string;
   }) => {
+    if (!trip.location) {
+      alert("위치는 자동완성 목록에서 선택해주세요!");
+      return;
+    }
+
     const coords = await geocodeLocation(trip.location);
+    if (!coords) {
+      alert("좌표를 찾을 수 없습니다.");
+      return;
+    }
 
     const newTrip = {
       id: Date.now().toString(),
       ...trip,
-      center: coords || undefined,
+      center: coords,
     };
 
     addTrip(newTrip);

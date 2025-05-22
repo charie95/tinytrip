@@ -1,25 +1,36 @@
 import { useState, useRef } from "react";
 import LocationAutocomplete from "./LocationAutocomplete";
 
-interface AddTripFormProps {
-  onSubmit: (trip: {
-    title: string;
-    startDate: string;
-    endDate: string;
-    comment: string;
-    location: string;
-    center?: { lat: number; lng: number };
-  }) => void;
-  onCancel?: () => void;
+interface TripData {
+  title: string;
+  startDate: string;
+  endDate: string;
+  comment: string;
+  location?: string;
+  center?: { lat: number; lng: number };
 }
 
-function AddTripForm({ onSubmit, onCancel }: AddTripFormProps) {
-  const [title, setTitle] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
-  const [comment, setComment] = useState("");
-  const [location, setLocation] = useState("");
-  const centerRef = useRef<{ lat: number; lng: number } | null>(null);
+interface AddTripFormProps {
+  initialData?: TripData;
+  onSubmit: (trip: TripData) => void;
+  onCancel?: () => void;
+  submitLabel?: string;
+}
+
+function AddTripForm({
+  initialData,
+  onSubmit,
+  onCancel,
+  submitLabel,
+}: AddTripFormProps) {
+  const [title, setTitle] = useState(initialData?.title || "");
+  const [startDate, setStartDate] = useState(initialData?.startDate || "");
+  const [endDate, setEndDate] = useState(initialData?.endDate || "");
+  const [comment, setComment] = useState(initialData?.comment || "");
+  const [location, setLocation] = useState(initialData?.location || "");
+  const centerRef = useRef<{ lat: number; lng: number } | null>(
+    initialData?.center || null
+  );
 
   const onSelect = ({
     lat,
@@ -33,6 +44,7 @@ function AddTripForm({ onSubmit, onCancel }: AddTripFormProps) {
     centerRef.current = { lat, lng };
     setLocation(name);
   };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title || !startDate || !endDate) return;
@@ -73,7 +85,7 @@ function AddTripForm({ onSubmit, onCancel }: AddTripFormProps) {
         value={endDate}
         onChange={(e) => setEndDate(e.target.value)}
       />
-      <LocationAutocomplete onSelect={onSelect} />
+      <LocationAutocomplete onSelect={onSelect} initialValue={location} />
       <textarea
         placeholder="여행 내용, 메모 등"
         className="border px-3 py-2 rounded resize-none h-24"
@@ -92,7 +104,7 @@ function AddTripForm({ onSubmit, onCancel }: AddTripFormProps) {
           type="submit"
           className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
         >
-          등록
+          {submitLabel || "등록"}
         </button>
       </div>
     </form>
