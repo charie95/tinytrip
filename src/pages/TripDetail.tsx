@@ -3,31 +3,41 @@ import { useParams, Link } from "react-router-dom";
 import { useTripStore } from "../stores/tripStore";
 import { GoogleMap, Marker } from "@react-google-maps/api";
 import { getDateRange } from "../utils/Date";
+import AddTripForm from "../components/AddTripForm";
+import { useRecoilState } from "recoil";
+import { selectedDateState, isEditModeState } from "../states/tripUi";
 
 const markerColors = [
-  "red", "blue", "green", "orange", "purple",
-  "yellow", "pink", "cyan", "brown", "gray",
+  "red",
+  "blue",
+  "green",
+  "orange",
+  "purple",
+  "yellow",
+  "pink",
+  "cyan",
+  "brown",
+  "gray",
 ];
 
 const TripDetail = () => {
   const { id } = useParams<{ id: string }>();
-  const trip = useTripStore((state) =>
-    state.trips.find((t) => t.id === id)
-  );
+  const trip = useTripStore((state) => state.trips.find((t) => t.id === id));
   const updateTrip = useTripStore((state) => state.updateTrip);
-
-  const [selectedDate, setSelectedDate] = useState<string>("");
-  const [isEditMode, setIsEditMode] = useState<boolean>(false);
+  const [selectedDate, setSelectedDate] = useRecoilState(selectedDateState);
+  const [isEditMode, setIsEditMode] = useRecoilState(isEditModeState);
+  const [isTripEditMode, setIsTripEditMode] = useState<boolean>(false);
+  const [polylineRenderKey, setPolylineRenderKey] = useState(0);
 
   const mapRef = useRef<google.maps.Map | null>(null);
   const polylineRef = useRef<Record<string, google.maps.Polyline>>({});
 
   useEffect(() => {
-  if (trip?.startDate && trip?.endDate && !selectedDate) {
-    const range = getDateRange(trip.startDate, trip.endDate);
-    setSelectedDate(range[0]); 
-  }
-}, [trip, selectedDate]);
+    if (trip?.startDate && trip?.endDate && !selectedDate) {
+      const range = getDateRange(trip.startDate, trip.endDate);
+      setSelectedDate(range[0]);
+    }
+  }, [trip, selectedDate, setSelectedDate]);
 
   if (!trip) {
     return <div className="p-4">😢 해당 여행 일정을 찾을 수 없습니다.</div>;
@@ -39,11 +49,9 @@ const TripDetail = () => {
     const map = mapRef.current;
     if (!map || !trip.pins) return;
 
-    // Delete existing polylines
     Object.values(polylineRef.current).forEach((poly) => poly.setMap(null));
     polylineRef.current = {};
 
-    // Create new polylines
     Object.entries(trip.pins).forEach(([date, pins]) => {
       if (pins.length < 2) return;
       const dayIndex = dateRange.findIndex((d) => d === date);
@@ -56,11 +64,72 @@ const TripDetail = () => {
       });
       polylineRef.current[date] = polyline;
     });
-  }, [trip.pins, dateRange]);
+  }, [trip.pins, dateRange, polylineRenderKey]);
 
-return (
+  if (isTripEditMode) {
+    return (
+      <div className="p-6 max-w-xl mx-auto">
+        <AddTripForm
+          initialData={trip}
+          submitLabel="저장"
+          onSubmit={(updated) => {
+            const oldRange = getDateRange(trip.startDate, trip.endDate);
+            const newRange = getDateRange(updated.startDate, updated.endDate);
+
+            const isDateChanged =
+              trip.startDate !== updated.startDate ||
+              trip.endDate !== updated.endDate;
+
+            const isLocationChanged = trip.location !== updated.location;
+
+            const noChange =
+              !isDateChanged &&
+              !isLocationChanged &&
+              trip.title === updated.title &&
+              trip.comment === updated.comment;
+
+            if (noChange) {
+              setIsTripEditMode(false);
+              return;
+            }
+
+            let updatedPins = trip.pins;
+            let updatedPlan = trip.plan;
+
+            if (isDateChanged || isLocationChanged) {
+              updatedPins = {};
+              updatedPlan = {};
+
+              for (let i = 0; i < newRange.length; i++) {
+                const oldDate = oldRange[i];
+                const newDate = newRange[i];
+
+                updatedPins[newDate] = isLocationChanged
+                  ? []
+                  : (oldDate && trip.pins?.[oldDate]) || [];
+
+                updatedPlan[newDate] = (oldDate && trip.plan?.[oldDate]) || "";
+              }
+            }
+
+            updateTrip({
+              ...trip,
+              ...updated,
+              pins: updatedPins,
+              plan: updatedPlan,
+            });
+
+            setTimeout(() => setPolylineRenderKey((prev) => prev + 1), 0);
+            setIsTripEditMode(false);
+          }}
+          onCancel={() => setIsTripEditMode(false)}
+        />
+      </div>
+    );
+  }
+
+  return (
     <div className="flex h-screen overflow-hidden">
-      {/* Left Panel */}
       <div className="w-full max-w-md p-6 overflow-y-auto bg-white shadow-lg">
         <Link
           to="/trips"
@@ -68,7 +137,15 @@ return (
         >
           ← 여행 목록으로 돌아가기
         </Link>
-        <h1 className="text-3xl font-bold">{trip.title}</h1>
+        <div className="flex justify-between items-center">
+          <h1 className="text-3xl font-bold">{trip.title}</h1>
+          <button
+            className="text-sm text-blue-500 hover:underline"
+            onClick={() => setIsTripEditMode(true)}
+          >
+            ✏️ 수정하기
+          </button>
+        </div>
         <p className="text-sm text-gray-500">
           📅 {trip.startDate} ~ {trip.endDate}
         </p>
@@ -112,7 +189,6 @@ return (
         </div>
       </div>
 
-      {/* Map Panel */}
       <div className="flex-1 relative">
         {trip.center?.lat && trip.center?.lng ? (
           <GoogleMap
@@ -158,7 +234,9 @@ return (
 
                     const updatedPins = {
                       ...trip.pins,
-                      [date]: (trip.pins?.[date] || []).filter((_, i) => i !== idx),
+                      [date]: (trip.pins?.[date] || []).filter(
+                        (_, i) => i !== idx
+                      ),
                     };
 
                     updateTrip({ ...trip, pins: updatedPins });
