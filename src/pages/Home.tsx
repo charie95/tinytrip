@@ -5,9 +5,7 @@ function Home() {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
-      <h1 className="text-4xl font-bold mb-6">
-        TinyTrip에 오신 걸 환영합니다!
-      </h1>
+      <h1 className="text-4xl font-bold mb-6">여행 일정 관리 앱이다.</h1>
       <p className="mb-8 text-gray-700">여행 일정을 등록하고 관리해보세요.</p>
       <button
         onClick={() => navigate("/trips")}
